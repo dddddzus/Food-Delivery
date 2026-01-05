@@ -10,6 +10,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 
         public HomeController(ILogger<HomeController> logger)
         {
+            //Testuji commit
             _logger = logger;
         }
 
