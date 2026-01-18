@@ -1,8 +1,75 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Přihlášení";
+    ViewData["BodyClass"] = "auth";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<main class="auth-wrap">
+    <section class="auth-card" aria-label="Přihlášení / Registrace">
+        <header class="brand">
+            <span class="brand-icon" aria-hidden="true">
+                <!-- můžeš vložit svg ikonku, nebo nechat prázdné -->
+            </span>
+            <h1 class="brand-title">FoodExpress</h1>
+        </header>
+
+        <div class="segmented" role="tablist" aria-label="Přepínač formuláře">
+            <button class="segmented-btn is-active" type="button" role="tab" aria-selected="true" data-tab="login">
+                Přihlášení
+            </button>
+            <button class="segmented-btn" type="button" role="tab" aria-selected="false" data-tab="register">
+                Registrace
+            </button>
+        </div>
+
+        <!-- LOGIN -->
+        <form id="loginForm" class="form is-active" novalidate>
+            <div class="field">
+                <label for="loginEmail">Email</label>
+                <input id="loginEmail" name="email" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="field">
+                <label for="loginPassword">Heslo</label>
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" required />
+            </div>
+
+            <button class="primary" type="submit">Přihlásit se</button>
+
+            <a class="forgot" href="#" onclick="event.preventDefault()">Zapomenuté heslo?</a>
+        </form>
+
+        <!-- REGISTER -->
+        <form id="registerForm" class="form" novalidate>
+            <div class="field">
+                <label for="regName">Celé jméno</label>
+                <input id="regName" name="name" type="text" autocomplete="name" required />
+            </div>
+
+            <div class="field">
+                <label for="regEmail">Email</label>
+                <input id="regEmail" name="email" type="email" autocomplete="email" required />
+            </div>
+
+            <div class="field">
+                <label for="regPhone">Telefon</label>
+                <input id="regPhone" name="phone" type="tel" autocomplete="tel" />
+            </div>
+
+            <div class="field">
+                <label for="regPass">Heslo</label>
+                <input id="regPass" name="password" type="password" autocomplete="new-password" required />
+            </div>
+
+            <div class="field">
+                <label for="regPass2">Potvrzení hesla</label>
+                <input id="regPass2" name="confirmPassword" type="password" autocomplete="new-password" required />
+            </div>
+
+            <button class="primary" type="submit">Registrovat se</button>
+        </form>
+
+        <p id="toast" class="toast" aria-live="polite"></p>
+    </section>
+</main>
+
+<footer class="auth-footer">© 2026 FoodExpress. Všechna práva vyhrazena.</footer>

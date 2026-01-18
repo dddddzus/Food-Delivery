@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="cs">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FoodExpress – Menu</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="home">
+    <!-- Top right -->
+    <div class="top-actions">
+        <button class="icon-chip" type="button" onclick="App.openCart()" aria-label="Košík">
+            <span class="cart-ico">🛒</span>
+            <span class="badge" id="cartCount">0</span>
+        </button>
+
+        <button class="chip chip-user" type="button" onclick="App.toggleUserMenu()">
+            Uživatel
+        </button>
+
+        <div id="userMenu" class="user-menu" hidden>
+            <button type="button" class="user-item">Profil</button>
+            <button type="button" class="user-item">Moje objednávky</button>
+            <button type="button" class="user-item">Nastavení</button>
+            <div class="user-sep"></div>
+            <button type="button" class="user-item danger" onclick="App.logout()">Odhlásit se</button>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <header class="hero">
+        <div class="hero-inner">
+            <div class="hero-brand">
+                <span class="hero-icon" aria-hidden="true">🍴</span>
+                <div>
+                    <h1 class="hero-title">FoodExpress</h1>
+                    <p class="hero-sub">Rychlý rozvoz jídla přímo k Vám domů</p>
+                </div>
+            </div>
+
+            <div class="hero-search">
+                <span class="search-ico" aria-hidden="true">🔍</span>
+                <input id="searchInput" type="text" placeholder="Hledat jídlo..." />
+            </div>
+        </div>
+    </header>
+
+    <!-- Categories -->
+    <section class="cats">
+        <div class="cats-inner" id="categoryTabs"></div>
+    </section>
+
+    <!-- Grid -->
+    <main class="container">
+        <div id="foodGrid" class="grid"></div>
+        <div id="emptyState" class="empty" hidden>Nenalezeno žádné jídlo</div>
+    </main>
+
+    <footer class="footer">
+        © 2026 FoodExpress. Všechna práva vyhrazena.
+    </footer>
+
+    <!-- CART drawer -->
+    <div id="cartOverlay" class="overlay" hidden onclick="App.closeCart()"></div>
+
+    <aside id="cartDrawer" class="drawer" hidden>
+        <div class="drawer-head">
+            <h2>Váš Košík</h2>
+            <button class="drawer-close" type="button" onclick="App.closeCart()">×</button>
+        </div>
+
+        <div id="cartBody" class="drawer-body"></div>
+
+        <div class="drawer-foot">
+            <div class="drawer-total">
+                <span>Celkem:</span>
+                <strong><span id="cartTotal">0</span> Kč</strong>
+            </div>
+            <button class="drawer-cta" type="button" onclick="App.goCheckout()">
+                Přejít k platbě
+            </button>
+        </div>
+    </aside>
+
+    <!-- DETAIL modal -->
+    <div id="detailOverlay" class="overlay" hidden onclick="App.closeDetail()"></div>
+
+    <section id="detailModal" class="detail" hidden aria-label="Detail jídla">
+        <button class="detail-close" type="button" onclick="App.closeDetail()">×</button>
+
+        <h2 id="dTitle" class="detail-title"></h2>
+
+        <div class="detail-image">
+            <img id="dImg" alt="" />
+        </div>
+
+        <div class="detail-toprow">
+            <div class="detail-priceblock">
+                <div class="detail-price"><span id="dPrice"></span> Kč</div>
+                <div class="detail-rating">
+                    <span class="star">★</span>
+                    <span id="dRating"></span>
+                    <span class="muted">(<span id="dReviewCount"></span> recenzí)</span>
+                </div>
+            </div>
+
+            <button class="detail-add" type="button" onclick="App.addSelectedToCart()">
+                <span class="plus">＋</span> Přidat do košíku
+            </button>
+        </div>
+
+        <div class="detail-stats">
+            <div class="stat">
+                <div class="stat-ico">⏱</div>
+                <div>
+                    <div class="stat-label">Příprava</div>
+                    <div class="stat-val" id="dPrep"></div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-ico">🔥</div>
+                <div>
+                    <div class="stat-label">Kalorie</div>
+                    <div class="stat-val" id="dCal"></div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-ico">☆</div>
+                <div>
+                    <div class="stat-label">Hodnocení</div>
+                    <div class="stat-val"><span id="dRating2"></span> / 5.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-section">
+            <h3>Popis</h3>
+            <p id="dDesc"></p>
+        </div>
+
+        <div class="detail-section" id="allergenWrap" hidden>
+            <h3>Alergeny</h3>
+            <div class="badges" id="dAllergens"></div>
+        </div>
+
+        <hr class="sep" />
+
+        <div class="detail-section">
+            <h3>Recenze (<span id="dReviewCount2"></span>)</h3>
+            <div id="dReviews" class="reviews"></div>
+        </div>
+    </section>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>
