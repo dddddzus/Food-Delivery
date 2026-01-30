@@ -282,7 +282,7 @@ const App = (() => {
         JSON.stringify({ email, name: "Uživatel" })
       );
       showToast("Úspěšně přihlášen!", "ok");
-      setTimeout(() => (window.location.href = "menu.html"), 600);
+        setTimeout(() => (window.location.href = "/FoodExpress/Menu"), 600);
     });
 
     registerForm.addEventListener("submit", (e) => {
@@ -306,7 +306,7 @@ const App = (() => {
 
       localStorage.setItem(USER_KEY, JSON.stringify({ email, name }));
       showToast("Registrace proběhla úspěšně!", "ok");
-      setTimeout(() => (window.location.href = "menu.html"), 700);
+        setTimeout(() => (window.location.href = "/FoodExpress/Menu"), 700);
     });
 
     setTab("login");
@@ -702,7 +702,7 @@ const App = (() => {
 
     alert("Objednávka byla úspěšně odeslána!");
     localStorage.removeItem(CART_KEY);
-    window.location.href = "menu.html";
+     window.location.href = "/FoodExpress/Menu";
   }
 
   // =====================================================

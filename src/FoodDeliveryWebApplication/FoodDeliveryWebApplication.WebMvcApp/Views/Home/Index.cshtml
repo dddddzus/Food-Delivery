@@ -7,7 +7,6 @@
     <section class="auth-card" aria-label="Přihlášení / Registrace">
         <header class="brand">
             <span class="brand-icon" aria-hidden="true">
-                <!-- můžeš vložit svg ikonku, nebo nechat prázdné -->
             </span>
             <h1 class="brand-title">FoodExpress</h1>
         </header>
@@ -22,7 +21,7 @@
         </div>
 
         <!-- LOGIN -->
-        <form id="loginForm" class="form is-active" novalidate>
+        <form id="loginForm" class="form is-active" method="post" action="/Home/Login" novalidate>
             <div class="field">
                 <label for="loginEmail">Email</label>
                 <input id="loginEmail" name="email" type="email" autocomplete="email" required />
@@ -39,7 +38,7 @@
         </form>
 
         <!-- REGISTER -->
-        <form id="registerForm" class="form" novalidate>
+        <form id="registerForm" class="form" method="post" action="/Home/Register" novalidate>
             <div class="field">
                 <label for="regName">Celé jméno</label>
                 <input id="regName" name="name" type="text" autocomplete="name" required />
