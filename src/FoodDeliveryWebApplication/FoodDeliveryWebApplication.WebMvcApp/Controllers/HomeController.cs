@@ -1,6 +1,11 @@
-using System.Diagnostics;
+using FoodDeliveryWebApplication.WebMvcApp.Data;
+using FoodDeliveryWebApplication.WebMvcApp.Entities;
 using FoodDeliveryWebApplication.WebMvcApp.Models;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Security.Claims;
 
 namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 {
@@ -8,10 +13,15 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
     {
         private readonly ILogger<HomeController> _logger;
 
+        private readonly AppDbContext _dbContext;
+
         public HomeController(ILogger<HomeController> logger)
         {
             _logger = logger;
+            _dbContext = new AppDbContext();
         }
+        
+      
 
         [HttpGet]
         public IActionResult Index()
@@ -19,14 +29,35 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
             return View();
         }
 
-        // LOGIN POST (zatím pøipravené)
+
         [HttpPost]
-        public IActionResult Login(string email, string password)
+        public async Task<IActionResult> Login(string email, string password)
         {
-            // TODO: Ve škole: najít uživatele v DB + ovìøit heslo 
-            // teï jen ukázka, že se to chytí:
-            TempData["Toast"] = $"Pøijat login: {email}";
+            User? user = _dbContext.Users
+                .FirstOrDefault(u => u.Email == email && u.Password == password);
+            if(user == null)
+            {
+                return View();
+            }
+            List<Claim> claims = new List<Claim>();
+
+            Claim idClaim = new Claim("id", user.Id.ToString());
+            Claim emailClaim = new Claim("email", user.Email);
+
+            claims.Add(idClaim);
+            claims.Add(emailClaim);
+
+            ClaimsIdentity identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            ClaimsPrincipal principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
             return RedirectToAction("Index");
+
+
+            
+            
         }
 
         // REGISTER POST (zatím pøipravené)

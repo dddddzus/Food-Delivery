@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 {
+    [Authorize]
     public class FoodExpressController : Controller
     {
         [HttpGet]
