@@ -6,12 +6,13 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Data
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
+        public DbSet<Product> Products { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
         {
-            optionsBuilder.UseMySQL(
-                "server=mysqlstudenti.litv.sssvt.cz;database=4c1_plickadavid_db2;user=plickadavid;password=123456"
-            );
         }
+        //mel jsem optionBuilder tady, ale nevim proc bez toho mi nefungoval prihlasovani, tak jsem to prehodil pomoci copilotu do programu a nyni to funguje, jinak vse bylo stejne..
     }
 }

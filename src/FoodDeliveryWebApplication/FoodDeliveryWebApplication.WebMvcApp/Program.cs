@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using FoodDeliveryWebApplication.WebMvcApp.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace FoodDeliveryWebApplication.WebMvcApp
 {
@@ -10,6 +12,11 @@ namespace FoodDeliveryWebApplication.WebMvcApp
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseMySQL("server=mysqlstudenti.litv.sssvt.cz;database=4c1_plickadavid_db2;user=plickadavid;password=123456")
+);
+
 
             //1. θαst konfigurace cookies
             builder.Services

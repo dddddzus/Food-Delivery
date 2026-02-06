@@ -15,13 +15,13 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 
         private readonly AppDbContext _dbContext;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, AppDbContext dbContext)
         {
             _logger = logger;
-            _dbContext = new AppDbContext();
+            _dbContext = dbContext;
         }
-        
-      
+
+
 
         [HttpGet]
         public IActionResult Index()
@@ -37,7 +37,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
                 .FirstOrDefault(u => u.Email == email && u.Password == password);
             if(user == null)
             {
-                return View();
+                return RedirectToAction("Index");
             }
             List<Claim> claims = new List<Claim>();
 
@@ -53,7 +53,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-            return RedirectToAction("Index");
+            return RedirectToAction("Menu", "FoodExpress");
 
 
             

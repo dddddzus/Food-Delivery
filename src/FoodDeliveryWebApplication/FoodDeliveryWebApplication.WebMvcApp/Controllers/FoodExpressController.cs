@@ -1,21 +1,26 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using FoodDeliveryWebApplication.WebMvcApp.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
-namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
+public class FoodExpressController : Controller
 {
-    [Authorize]
-    public class FoodExpressController : Controller
-    {
-        [HttpGet]
-        public IActionResult Index()
-        {
-            return View(); // Views/FoodExpress/Index.cshtml
-        }
+    private readonly AppDbContext _db;
 
-        [HttpGet]
-        public IActionResult Menu()
-        {
-            return View(); // Views/FoodExpress/Menu.cshtml
-        }
+    public FoodExpressController(AppDbContext db)
+    {
+        _db = db;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Menu()
+    {
+        var products = await _db.Products.ToListAsync();
+        return View(products);
+    }
+
+    [HttpGet]
+    public IActionResult Checkout()
+    {
+        return View();
     }
 }
