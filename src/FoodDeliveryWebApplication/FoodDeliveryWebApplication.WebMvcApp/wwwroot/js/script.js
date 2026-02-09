@@ -1,19 +1,9 @@
-/* FoodExpress – MVC version
-   - products are rendered server-side (Razor) into HTML
-   - JS only handles: search, category filter, cart drawer, detail modal, checkout summary
-*/
+console.log("script.js loaded");
 
 const App = (() => {
-    const CART_KEY = "cart_items";
-
-    let foodItems = []; // loaded from DOM
-    let selectedCategory = "all";
-    let selectedItem = null;
-
     // ---------- helpers ----------
-    function $(id) {
-        return document.getElementById(id);
-    }
+    const $ = (id) => document.getElementById(id);
+
     function escapeHtml(s) {
         return String(s)
             .replaceAll("&", "&amp;")
@@ -23,165 +13,149 @@ const App = (() => {
             .replaceAll("'", "&#039;");
     }
 
-    // ---------- cart storage ----------
-    function loadCart() {
-        try {
-            return JSON.parse(localStorage.getItem(CART_KEY)) || [];
-        } catch {
-            return [];
-        }
-    }
-    function saveCart(cart) {
-        localStorage.setItem(CART_KEY, JSON.stringify(cart));
-    }
-    function cartCount(cart) {
-        return cart.reduce((s, i) => s + i.quantity, 0);
-    }
-    function cartTotal(cart) {
-        return cart.reduce((s, i) => s + i.price * i.quantity, 0);
+    async function getJson(url) {
+        const r = await fetch(url, { headers: { "Accept": "application/json" } });
+        // pokud nejsi přihlášený, MVC často vrátí redirect (302) -> fetch pak dostane HTML
+        if (!r.ok) return [];
+        const ct = (r.headers.get("content-type") || "").toLowerCase();
+        if (!ct.includes("application/json")) return [];
+        return await r.json();
     }
 
-    // ---------- read products rendered by MVC ----------
+    async function post(url) {
+        return await fetch(url, { method: "POST" });
+    }
+
+    // ---------- AUTH tabs (login/register) ----------
+    function initAuthTabs() {
+        const loginForm = $("loginForm");
+        const registerForm = $("registerForm");
+        const tabs = document.querySelectorAll(".segmented-btn");
+        if (!loginForm || !registerForm || tabs.length === 0) return;
+
+        function setTab(name) {
+            tabs.forEach((b) => {
+                const active = b.dataset.tab === name;
+                b.classList.toggle("is-active", active);
+                b.setAttribute("aria-selected", active ? "true" : "false");
+            });
+            loginForm.classList.toggle("is-active", name === "login");
+            registerForm.classList.toggle("is-active", name === "register");
+        }
+
+        tabs.forEach((b) => b.addEventListener("click", () => setTab(b.dataset.tab)));
+        setTab("login");
+    }
+
+    // ---------- MENU: products read from DOM ----------
+    let products = [];
+    let selectedProduct = null;
+
     function readProductsFromDom() {
         const nodes = document.querySelectorAll("[data-product]");
-        foodItems = Array.from(nodes).map((n) => ({
-            id: n.dataset.id,
-            name: n.dataset.name,
-            description: n.dataset.description,
-            price: Number(n.dataset.price),
-            image: n.dataset.image,
-            category: n.dataset.category,
+        products = Array.from(nodes).map((n) => ({
+            id: n.dataset.id, // string from DOM
+            name: n.dataset.name || "",
+            description: n.dataset.description || "",
+            price: Number(n.dataset.price || 0),
+            image: n.dataset.image || "",
+            category: n.dataset.category || "",
         }));
     }
 
-    // ---------- search + category filter (DOM-based) ----------
-    function applyFilters() {
-        const q = ($("searchInput")?.value || "").trim().toLowerCase();
-
-        document.querySelectorAll("[data-product]").forEach((card) => {
-            const name = (card.dataset.name || "").toLowerCase();
-            const desc = (card.dataset.description || "").toLowerCase();
-            const cat = card.dataset.category || "";
-
-            const okCat = selectedCategory === "all" || cat === selectedCategory;
-            const okSearch = !q || name.includes(q) || desc.includes(q);
-            card.style.display = okCat && okSearch ? "" : "none";
-        });
-
-        // empty state
-        const anyVisible = Array.from(document.querySelectorAll("[data-product]"))
-            .some((c) => c.style.display !== "none");
-        const empty = $("emptyState");
-        if (empty) empty.hidden = anyVisible;
+    // ---------- CART: DB-backed ----------
+    async function fetchCart() {
+        // vrací [{ productId, name, price, image, quantity }]
+        return await getJson("/Cart/Get");
     }
 
-    function bindCategories() {
-        const el = $("categoryTabs");
-        if (!el) return;
-
-        el.addEventListener("click", (e) => {
-            const btn = e.target.closest("[data-cat]");
-            if (!btn) return;
-
-            selectedCategory = btn.dataset.cat || "all";
-
-            el.querySelectorAll("[data-cat]").forEach((b) => {
-                b.classList.toggle("is-active", b.dataset.cat === selectedCategory);
-            });
-
-            applyFilters();
-        });
+    async function addToCart(productId) {
+        const res = await post(`/Cart/Add?productId=${encodeURIComponent(productId)}`);
+        if (!res.ok) {
+            alert("Nepodařilo se přidat do košíku (možná nejsi přihlášený).");
+            return;
+        }
+        await updateCartUI();
     }
 
-    function bindSearch() {
-        const input = $("searchInput");
-        if (!input) return;
-        input.addEventListener("input", applyFilters);
+    async function setQty(productId, qty) {
+        const res = await post(`/Cart/SetQty?productId=${encodeURIComponent(productId)}&qty=${encodeURIComponent(qty)}`);
+        if (!res.ok) {
+            alert("Nepodařilo se upravit košík.");
+            return;
+        }
+        await updateCartUI(true);
     }
 
-    // ---------- cart ----------
-    function addToCart(id) {
-        const item = foodItems.find((i) => i.id === id);
-        if (!item) return;
-
-        const cart = loadCart();
-        const existing = cart.find((c) => c.id === id);
-        if (existing) existing.quantity += 1;
-        else cart.push({ id: item.id, name: item.name, price: item.price, image: item.image, quantity: 1 });
-
-        saveCart(cart);
-        updateCartUI();
+    async function removeFromCart(productId) {
+        const res = await post(`/Cart/Remove?productId=${encodeURIComponent(productId)}`);
+        if (!res.ok) {
+            alert("Nepodařilo se odstranit položku.");
+            return;
+        }
+        await updateCartUI(true);
     }
 
-    function updateQty(id, nextQty) {
-        let cart = loadCart();
-        if (nextQty <= 0) cart = cart.filter((i) => i.id !== id);
-        else cart = cart.map((i) => (i.id === id ? { ...i, quantity: nextQty } : i));
-        saveCart(cart);
-        updateCartUI(true);
-    }
+    async function updateCartUI(keepOpen = false) {
+        const cart = await fetchCart();
 
-    function removeFromCart(id) {
-        const cart = loadCart().filter((i) => i.id !== id);
-        saveCart(cart);
-        updateCartUI(true);
-    }
-
-    function updateCartUI() {
-        const cart = loadCart();
+        const count = cart.reduce((s, i) => s + i.quantity, 0);
+        const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
         const countEl = $("cartCount");
         const totalEl = $("cartTotal");
-        if (countEl) countEl.textContent = String(cartCount(cart));
-        if (totalEl) totalEl.textContent = String(cartTotal(cart));
+        if (countEl) countEl.textContent = String(count);
+        if (totalEl) totalEl.textContent = String(total);
 
         const body = $("cartBody");
         if (!body) return;
 
-        if (cart.length === 0) {
+        if (!cart || cart.length === 0) {
             body.innerHTML = `<div class="cart-empty">Váš košík je prázdný</div>`;
             return;
         }
 
-        body.innerHTML = cart
-            .map(
-                (i) => `
-        <div class="cart-item">
-          <img src="${i.image}" alt="${escapeHtml(i.name)}" />
-          <div class="cart-info">
-            <p class="cart-name">${escapeHtml(i.name)}</p>
-            <p class="cart-price">${i.price} Kč</p>
-          </div>
-          <div class="cart-controls">
-            <button class="icon-btn" type="button" data-minus="${i.id}">−</button>
-            <span class="qty">${i.quantity}</span>
-            <button class="icon-btn" type="button" data-plus="${i.id}">+</button>
-            <button class="icon-btn" type="button" data-x="${i.id}">×</button>
-          </div>
-        </div>`
-            )
-            .join("");
+        body.innerHTML = cart.map(i => `
+      <div class="cart-item">
+        <img src="${i.image}" alt="${escapeHtml(i.name)}" />
+        <div class="cart-info">
+          <p class="cart-name">${escapeHtml(i.name)}</p>
+          <p class="cart-price">${i.price} Kč</p>
+        </div>
+        <div class="cart-controls">
+          <button class="icon-btn" type="button" data-minus="${i.productId}">−</button>
+          <span class="qty">${i.quantity}</span>
+          <button class="icon-btn" type="button" data-plus="${i.productId}">+</button>
+          <button class="icon-btn" type="button" data-x="${i.productId}">×</button>
+        </div>
+      </div>
+    `).join("");
 
-        body.querySelectorAll("[data-minus]").forEach((b) =>
-            b.addEventListener("click", () => {
-                const id = b.dataset.minus;
-                const cur = loadCart().find((x) => x.id === id)?.quantity || 1;
-                updateQty(id, cur - 1);
+        body.querySelectorAll("[data-minus]").forEach(btn =>
+            btn.addEventListener("click", () => {
+                const id = btn.dataset.minus;
+                const cur = cart.find(x => String(x.productId) === String(id))?.quantity || 1;
+                setQty(id, cur - 1);
             })
         );
-        body.querySelectorAll("[data-plus]").forEach((b) =>
-            b.addEventListener("click", () => {
-                const id = b.dataset.plus;
-                const cur = loadCart().find((x) => x.id === id)?.quantity || 0;
-                updateQty(id, cur + 1);
+
+        body.querySelectorAll("[data-plus]").forEach(btn =>
+            btn.addEventListener("click", () => {
+                const id = btn.dataset.plus;
+                const cur = cart.find(x => String(x.productId) === String(id))?.quantity || 0;
+                setQty(id, cur + 1);
             })
         );
-        body.querySelectorAll("[data-x]").forEach((b) =>
-            b.addEventListener("click", () => removeFromCart(b.dataset.x))
+
+        body.querySelectorAll("[data-x]").forEach(btn =>
+            btn.addEventListener("click", () => removeFromCart(btn.dataset.x))
         );
+
+        if (!keepOpen) return;
     }
 
-    function openCart() {
+    // ---------- CART drawer open/close ----------
+    async function openCart() {
         const overlay = $("cartOverlay");
         const drawer = $("cartDrawer");
         if (!overlay || !drawer) return;
@@ -189,7 +163,8 @@ const App = (() => {
         overlay.hidden = false;
         drawer.hidden = false;
         requestAnimationFrame(() => drawer.classList.add("is-open"));
-        updateCartUI();
+
+        await updateCartUI(true);
     }
 
     function closeCart() {
@@ -204,31 +179,26 @@ const App = (() => {
         }, 260);
     }
 
-    function goCheckout() {
-        const cart = loadCart();
-        if (cart.length === 0) return alert("Košík je prázdný.");
-        window.location.href = "/FoodExpress/Checkout"; // MVC route
-    }
-
-    // ---------- detail modal (simple: uses product data; reviews/allergens can stay later) ----------
-    function openDetail(id) {
-        const item = foodItems.find((i) => i.id === id);
-        if (!item) return;
-        selectedItem = item;
+    // ---------- DETAIL modal ----------
+    function openDetail(productId) {
+        const p = products.find((x) => String(x.id) === String(productId));
+        if (!p) return;
+        selectedProduct = p;
 
         const ov = $("detailOverlay");
         const modal = $("detailModal");
         if (!ov || !modal) return;
 
-        $("dTitle").textContent = item.name;
-        $("dImg").src = item.image;
-        $("dImg").alt = item.name;
-        $("dPrice").textContent = String(item.price);
-        $("dDesc").textContent = item.description;
+        if ($("dTitle")) $("dTitle").textContent = p.name;
+        if ($("dImg")) {
+            $("dImg").src = p.image;
+            $("dImg").alt = p.name;
+        }
+        if ($("dPrice")) $("dPrice").textContent = String(p.price);
+        if ($("dDesc")) $("dDesc").textContent = p.description;
 
         ov.hidden = false;
         modal.hidden = false;
-
         document.documentElement.style.overflow = "hidden";
         document.body.style.overflow = "hidden";
     }
@@ -240,118 +210,60 @@ const App = (() => {
 
         ov.hidden = true;
         modal.hidden = true;
-        selectedItem = null;
+        selectedProduct = null;
 
         document.documentElement.style.overflow = "";
         document.body.style.overflow = "";
     }
 
-    function addSelectedToCart() {
-        if (!selectedItem) return;
-        addToCart(selectedItem.id);
+    async function addSelectedToCart() {
+        if (!selectedProduct) return;
+        await addToCart(selectedProduct.id);
         closeDetail();
     }
 
-    function bindCardClicks() {
-        // add buttons
-        document.querySelectorAll("[data-add]").forEach((btn) => {
-            btn.addEventListener("click", () => addToCart(btn.dataset.add));
-        });
+    // ---------- MENU bindings ----------
+    function initMenuPage() {
+        // menu stránku poznáme podle toho, že existuje aspoň jedna karta s data-product
+        if (!document.querySelector("[data-product]")) return;
 
-        // open detail
+        readProductsFromDom();
+
+        // otevření detailu
         document.querySelectorAll("[data-open]").forEach((el) => {
             el.addEventListener("click", () => openDetail(el.dataset.open));
         });
-    }
 
-    // ---------- checkout ----------
-    function initCheckoutPage() {
-        if (!document.body.classList.contains("checkout")) return;
-
-        const lines = $("summaryLines");
-        const sumSubtotal = $("sumSubtotal");
-        const sumDelivery = $("sumDelivery");
-        const sumTotal = $("sumTotal");
-
-        const cart = loadCart();
-        const delivery = 49;
-        const subtotal = cartTotal(cart);
-        const total = subtotal + delivery;
-
-        if (lines) {
-            lines.innerHTML = cart.length
-                ? cart
-                    .map(
-                        (i) =>
-                            `<div class="sumline"><span>${escapeHtml(i.name)} x${i.quantity}</span><span><b>${i.price * i.quantity} Kč</b></span></div>`
-                    )
-                    .join("")
-                : `<div style="color:#6b7280;font-weight:800">Košík je prázdný</div>`;
-        }
-
-        if (sumSubtotal) sumSubtotal.textContent = `${subtotal} Kč`;
-        if (sumDelivery) sumDelivery.textContent = `${delivery} Kč`;
-        if (sumTotal) sumTotal.textContent = `${total} Kč`;
-
-        // payment buttons
-        const payBtns = document.querySelectorAll(".pay-btn");
-        const cardFields = $("cardFields");
-        let selected = "card";
-
-        payBtns.forEach((b) => {
-            b.addEventListener("click", () => {
-                selected = b.dataset.pay || "card";
-                payBtns.forEach((x) => x.classList.toggle("is-active", x === b));
-                if (cardFields) cardFields.style.display = selected === "card" ? "" : "none";
-            });
+        // přidání do košíku
+        document.querySelectorAll("[data-add]").forEach((btn) => {
+            btn.addEventListener("click", async () => addToCart(btn.dataset.add));
         });
 
-        if (cardFields) cardFields.style.display = selected === "card" ? "" : "none";
-    }
-
-    function submitOrder() {
-        const form = document.getElementById("checkoutForm");
-        if (form && !form.checkValidity()) {
-            form.reportValidity();
-            return;
-        }
-        alert("Objednávka byla úspěšně odeslána!");
-        localStorage.removeItem(CART_KEY);
-        window.location.href = "/FoodExpress/Menu";
-    }
-
-    // ---------- init ----------
-    function initHomePage() {
-        if (!document.body.classList.contains("home")) return;
-
-        readProductsFromDom();
-        bindSearch();
-        bindCategories();
-        bindCardClicks();
-        applyFilters();
-        updateCartUI();
-
+        // esc zavírá
         document.addEventListener("keydown", (e) => {
             if (e.key !== "Escape") return;
             closeDetail();
             closeCart();
         });
+
+        // načíst košík z DB (badge + total)
+        updateCartUI();
     }
 
+    // ---------- init ----------
     function init() {
-        initHomePage();
-        initCheckoutPage();
+        initAuthTabs();
+        initMenuPage();
     }
 
     return {
         init,
+        // použito z HTML onclick
         openCart,
         closeCart,
-        goCheckout,
         openDetail,
         closeDetail,
         addSelectedToCart,
-        submitOrder,
     };
 })();
 

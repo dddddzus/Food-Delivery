@@ -1,5 +1,125 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@{
+﻿@{
+    ViewData["Title"] = "Pokladna";
+    ViewData["BodyClass"] = "checkout";
 }
+<!doctype html>
+<html lang="cs">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>FoodExpress – Pokladna</title>
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body class="checkout">
+    <main class="checkout-wrap">
+        <a class="backlink" asp-controller="FoodExpress" asp-action="Menu">← Zpět na menu</a>
+        <h1 class="checkout-title">Pokladna</h1>
+
+        <div class="checkout-grid">
+            <!-- LEFT -->
+            <section class="col-left">
+                <div class="panel">
+                    <h2 class="panel-title">Doručovací údaje</h2>
+
+                    <form id="checkoutForm" class="form-grid" autocomplete="on">
+                        <div class="f">
+                            <label>Celé jméno</label>
+                            <input name="name" required />
+                        </div>
+                        <div class="f">
+                            <label>Telefon</label>
+                            <input name="phone" required />
+                        </div>
+
+                        <div class="f full">
+                            <label>Email</label>
+                            <input name="email" type="email" required />
+                        </div>
+
+                        <div class="f full">
+                            <label>Ulice a číslo popisné</label>
+                            <input name="address" required />
+                        </div>
+
+                        <div class="f">
+                            <label>Město</label>
+                            <input name="city" required />
+                        </div>
+                        <div class="f">
+                            <label>PSČ</label>
+                            <input name="zip" required />
+                        </div>
+                    </form>
+                </div>
+
+                <div class="panel">
+                    <h2 class="panel-title">Platební metoda</h2>
+
+                    <div class="pay-methods">
+                        <button class="pay-btn is-active" type="button" data-pay="card">
+                            <div class="pay-ico">💳</div>
+                            <div class="pay-name">Karta</div>
+                        </button>
+                        <button class="pay-btn" type="button" data-pay="google">
+                            <div class="pay-ico">GPay</div>
+                            <div class="pay-name">Google Pay</div>
+                        </button>
+                        <button class="pay-btn" type="button" data-pay="apple">
+                            <div class="pay-ico">Pay</div>
+                            <div class="pay-name">Apple Pay</div>
+                        </button>
+                    </div>
+
+                    <div id="cardFields" class="card-fields">
+                        <div class="f full">
+                            <label>Číslo karty</label>
+                            <input name="cardNumber" maxlength="19" placeholder="1234 5678 9012 3456" />
+                        </div>
+                        <div class="f">
+                            <label>Platnost</label>
+                            <input name="expiry" maxlength="5" placeholder="MM/RR" />
+                        </div>
+                        <div class="f">
+                            <label>CVV</label>
+                            <input name="cvv" maxlength="4" type="password" placeholder="123" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RIGHT -->
+            <aside class="col-right">
+                <div class="panel summary">
+                    <h2 class="panel-title">Shrnutí objednávky</h2>
+
+                    <div id="summaryLines" class="summary-lines"></div>
+
+                    <div class="summary-totals">
+                        <div class="row"><span>Mezisoučet</span><span id="sumSubtotal">0 Kč</span></div>
+                        <div class="row"><span>Doprava</span><span id="sumDelivery">49 Kč</span></div>
+                        <div class="row strong">
+                            <span>Celkem</span>
+                            <span class="accent" id="sumTotal">0 Kč</span>
+                        </div>
+                    </div>
+
+                    <button class="order-btn" type="button" onclick="App.submitOrder()">
+                        Dokončit objednávku
+                    </button>
+
+                    <div class="tiny">Vaše platební údaje jsou bezpečně šifrovány</div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <footer class="footer">
+        © 2026 FoodExpress. Všechna práva vyhrazena.
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

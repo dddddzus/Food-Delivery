@@ -33,5 +33,6 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Entities
 
         [Column("is_active")]
         public bool IsActive { get; set; }
+
     }
 }

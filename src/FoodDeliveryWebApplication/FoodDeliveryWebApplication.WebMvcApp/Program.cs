@@ -16,6 +16,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp
             builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseMySQL("server=mysqlstudenti.litv.sssvt.cz;database=4c1_plickadavid_db2;user=plickadavid;password=123456")
 );
+            
 
 
             //1. θαst konfigurace cookies
@@ -50,6 +51,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
 
+            app.UseStaticFiles();
             app.Run();
         }
     }
