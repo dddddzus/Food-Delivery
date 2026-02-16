@@ -14,8 +14,7 @@ const App = (() => {
     }
 
     async function getJson(url) {
-        const r = await fetch(url, { headers: { "Accept": "application/json" } });
-        // pokud nejsi přihlášený, MVC často vrátí redirect (302) -> fetch pak dostane HTML
+        const r = await fetch(url, { headers: { Accept: "application/json" } });
         if (!r.ok) return [];
         const ct = (r.headers.get("content-type") || "").toLowerCase();
         if (!ct.includes("application/json")) return [];
@@ -26,7 +25,9 @@ const App = (() => {
         return await fetch(url, { method: "POST" });
     }
 
-    // ---------- AUTH tabs (login/register) ----------
+    // =====================================================
+    // AUTH tabs (login/register) – index.cshtml
+    // =====================================================
     function initAuthTabs() {
         const loginForm = $("loginForm");
         const registerForm = $("registerForm");
@@ -39,6 +40,7 @@ const App = (() => {
                 b.classList.toggle("is-active", active);
                 b.setAttribute("aria-selected", active ? "true" : "false");
             });
+
             loginForm.classList.toggle("is-active", name === "login");
             registerForm.classList.toggle("is-active", name === "register");
         }
@@ -47,35 +49,37 @@ const App = (() => {
         setTab("login");
     }
 
-
-    //tlacitko uzivatle
-    window.App = window.App || {};
-
-    window.App.toggleUserMenu = function () {
-        const m = document.getElementById("userMenu");
+    // =====================================================
+    // USER MENU (button top right)
+    // =====================================================
+    function toggleUserMenu() {
+        const m = $("userMenu");
         if (!m) return;
         m.hidden = !m.hidden;
-    };
+    }
 
-    // zavírání po kliknutí mimo + ESC
-    document.addEventListener("click", (e) => {
-        const menu = document.getElementById("userMenu");
-        const btn = document.querySelector(".chip-user");
-        if (!menu || menu.hidden) return;
-        if (menu.contains(e.target)) return;
-        if (btn && btn.contains(e.target)) return;
-        menu.hidden = true;
-    });
+    function initUserMenuCloseHandlers() {
+        // zavírání po kliknutí mimo
+        document.addEventListener("click", (e) => {
+            const menu = $("userMenu");
+            const btn = document.querySelector(".chip-user");
+            if (!menu || menu.hidden) return;
+            if (menu.contains(e.target)) return;
+            if (btn && btn.contains(e.target)) return;
+            menu.hidden = true;
+        });
 
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") {
-            const menu = document.getElementById("userMenu");
+        // ESC zavírá
+        document.addEventListener("keydown", (e) => {
+            if (e.key !== "Escape") return;
+            const menu = $("userMenu");
             if (menu) menu.hidden = true;
-        }
-    });
+        });
+    }
 
-
-    // ---------- MENU: products read from DOM ----------
+    // =====================================================
+    // MENU: products read from DOM
+    // =====================================================
     let products = [];
     let selectedProduct = null;
 
@@ -91,9 +95,11 @@ const App = (() => {
         }));
     }
 
-    // ---------- CART: DB-backed ----------
+    // =====================================================
+    // CART: DB-backed (CartController endpoints)
+    // =====================================================
     async function fetchCart() {
-        // vrací [{ productId, name, price, image, quantity }]
+        // očekává: [{ productId, name, price, image, quantity }]
         return await getJson("/Cart/Get");
     }
 
@@ -107,7 +113,9 @@ const App = (() => {
     }
 
     async function setQty(productId, qty) {
-        const res = await post(`/Cart/SetQty?productId=${encodeURIComponent(productId)}&qty=${encodeURIComponent(qty)}`);
+        const res = await post(
+            `/Cart/SetQty?productId=${encodeURIComponent(productId)}&qty=${encodeURIComponent(qty)}`
+        );
         if (!res.ok) {
             alert("Nepodařilo se upravit košík.");
             return;
@@ -127,8 +135,8 @@ const App = (() => {
     async function updateCartUI(keepOpen = false) {
         const cart = await fetchCart();
 
-        const count = cart.reduce((s, i) => s + i.quantity, 0);
-        const total = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+        const count = (cart || []).reduce((s, i) => s + i.quantity, 0);
+        const total = (cart || []).reduce((s, i) => s + i.price * i.quantity, 0);
 
         const countEl = $("cartCount");
         const totalEl = $("cartTotal");
@@ -143,46 +151,52 @@ const App = (() => {
             return;
         }
 
-        body.innerHTML = cart.map(i => `
-      <div class="cart-item">
-        <img src="${i.image}" alt="${escapeHtml(i.name)}" />
-        <div class="cart-info">
-          <p class="cart-name">${escapeHtml(i.name)}</p>
-          <p class="cart-price">${i.price} Kč</p>
+        body.innerHTML = cart
+            .map(
+                (i) => `
+        <div class="cart-item">
+          <img src="${i.image}" alt="${escapeHtml(i.name)}" />
+          <div class="cart-info">
+            <p class="cart-name">${escapeHtml(i.name)}</p>
+            <p class="cart-price">${i.price} Kč</p>
+          </div>
+          <div class="cart-controls">
+            <button class="icon-btn" type="button" data-minus="${i.productId}">−</button>
+            <span class="qty">${i.quantity}</span>
+            <button class="icon-btn" type="button" data-plus="${i.productId}">+</button>
+            <button class="icon-btn" type="button" data-x="${i.productId}">×</button>
+          </div>
         </div>
-        <div class="cart-controls">
-          <button class="icon-btn" type="button" data-minus="${i.productId}">−</button>
-          <span class="qty">${i.quantity}</span>
-          <button class="icon-btn" type="button" data-plus="${i.productId}">+</button>
-          <button class="icon-btn" type="button" data-x="${i.productId}">×</button>
-        </div>
-      </div>
-    `).join("");
+      `
+            )
+            .join("");
 
-        body.querySelectorAll("[data-minus]").forEach(btn =>
+        body.querySelectorAll("[data-minus]").forEach((btn) =>
             btn.addEventListener("click", () => {
                 const id = btn.dataset.minus;
-                const cur = cart.find(x => String(x.productId) === String(id))?.quantity || 1;
+                const cur = cart.find((x) => String(x.productId) === String(id))?.quantity || 1;
                 setQty(id, cur - 1);
             })
         );
 
-        body.querySelectorAll("[data-plus]").forEach(btn =>
+        body.querySelectorAll("[data-plus]").forEach((btn) =>
             btn.addEventListener("click", () => {
                 const id = btn.dataset.plus;
-                const cur = cart.find(x => String(x.productId) === String(id))?.quantity || 0;
+                const cur = cart.find((x) => String(x.productId) === String(id))?.quantity || 0;
                 setQty(id, cur + 1);
             })
         );
 
-        body.querySelectorAll("[data-x]").forEach(btn =>
+        body.querySelectorAll("[data-x]").forEach((btn) =>
             btn.addEventListener("click", () => removeFromCart(btn.dataset.x))
         );
 
         if (!keepOpen) return;
     }
 
-    // ---------- CART drawer open/close ----------
+    // =====================================================
+    // CART drawer open/close
+    // =====================================================
     async function openCart() {
         const overlay = $("cartOverlay");
         const drawer = $("cartDrawer");
@@ -190,8 +204,8 @@ const App = (() => {
 
         overlay.hidden = false;
         drawer.hidden = false;
-        requestAnimationFrame(() => drawer.classList.add("is-open"));
 
+        requestAnimationFrame(() => drawer.classList.add("is-open"));
         await updateCartUI(true);
     }
 
@@ -207,7 +221,9 @@ const App = (() => {
         }, 260);
     }
 
-    // ---------- DETAIL modal ----------
+    // =====================================================
+    // DETAIL modal
+    // =====================================================
     function openDetail(productId) {
         const p = products.find((x) => String(x.id) === String(productId));
         if (!p) return;
@@ -227,6 +243,7 @@ const App = (() => {
 
         ov.hidden = false;
         modal.hidden = false;
+
         document.documentElement.style.overflow = "hidden";
         document.body.style.overflow = "hidden";
     }
@@ -250,43 +267,46 @@ const App = (() => {
         closeDetail();
     }
 
-    // ---------- MENU bindings ----------
+    // =====================================================
+    // MENU bindings
+    // =====================================================
     function initMenuPage() {
         // menu stránku poznáme podle toho, že existuje aspoň jedna karta s data-product
         if (!document.querySelector("[data-product]")) return;
 
         readProductsFromDom();
 
-        // otevření detailu
         document.querySelectorAll("[data-open]").forEach((el) => {
             el.addEventListener("click", () => openDetail(el.dataset.open));
         });
 
-        // přidání do košíku
         document.querySelectorAll("[data-add]").forEach((btn) => {
             btn.addEventListener("click", async () => addToCart(btn.dataset.add));
         });
 
-        // esc zavírá
         document.addEventListener("keydown", (e) => {
             if (e.key !== "Escape") return;
             closeDetail();
             closeCart();
         });
 
-        // načíst košík z DB (badge + total)
         updateCartUI();
     }
 
-    // ---------- init ----------
+    // =====================================================
+    // INIT
+    // =====================================================
     function init() {
         initAuthTabs();
         initMenuPage();
+        initUserMenuCloseHandlers();
     }
 
     return {
         init,
-        // použito z HTML onclick
+
+        // onclick z HTML
+        toggleUserMenu,
         openCart,
         closeCart,
         openDetail,
@@ -296,3 +316,4 @@ const App = (() => {
 })();
 
 document.addEventListener("DOMContentLoaded", App.init);
+window.App = App;

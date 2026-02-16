@@ -70,44 +70,46 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (!ModelState.IsValid)
+            if (string.IsNullOrWhiteSpace(model.Name) ||
+                string.IsNullOrWhiteSpace(model.Email) ||
+                string.IsNullOrWhiteSpace(model.Password))
             {
-                TempData["Toast"] = "Oprav chyby ve formuláøi.";
+                TempData["Toast"] = "Vyplòte povinná pole.";
                 return RedirectToAction("Index");
             }
 
-         
+            if (model.Password != model.ConfirmPassword)
+            {
+                TempData["Toast"] = "Hesla se neshodují!";
+                return RedirectToAction("Index");
+            }
 
+            string email = model.Email.Trim();
 
-            bool exists = await _dbContext.Users.AnyAsync(u => u.Email == model.Email);
+            bool exists = await _dbContext.Users.AnyAsync(u => u.Email == email);
             if (exists)
             {
                 TempData["Toast"] = "Uživatel s tímto emailem už existuje.";
                 return RedirectToAction("Index");
             }
 
-            var user = new User
-            {
-                Name = model.Name.Trim(),
-                Email = model.Email.Trim(),
-                Password = model.Password 
-                                          
-            };
+            var user = new User(
+                model.Name.Trim(),
+                email,
+                model.Password,        // zatím bez hash
+                model.Phone?.Trim()
+            );
 
             _dbContext.Users.Add(user);
             await _dbContext.SaveChangesAsync();
 
             TempData["Toast"] = "Registrace probìhla úspìšnì!";
             return RedirectToAction("Index");
-
-
         }
-        [Authorize]
+        [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(
-                CookieAuthenticationDefaults.AuthenticationScheme);
-
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Index");
         }
 
