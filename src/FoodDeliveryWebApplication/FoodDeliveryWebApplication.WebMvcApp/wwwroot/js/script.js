@@ -47,6 +47,34 @@ const App = (() => {
         setTab("login");
     }
 
+
+    //tlacitko uzivatle
+    window.App = window.App || {};
+
+    window.App.toggleUserMenu = function () {
+        const m = document.getElementById("userMenu");
+        if (!m) return;
+        m.hidden = !m.hidden;
+    };
+
+    // zavírání po kliknutí mimo + ESC
+    document.addEventListener("click", (e) => {
+        const menu = document.getElementById("userMenu");
+        const btn = document.querySelector(".chip-user");
+        if (!menu || menu.hidden) return;
+        if (menu.contains(e.target)) return;
+        if (btn && btn.contains(e.target)) return;
+        menu.hidden = true;
+    });
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            const menu = document.getElementById("userMenu");
+            if (menu) menu.hidden = true;
+        }
+    });
+
+
     // ---------- MENU: products read from DOM ----------
     let products = [];
     let selectedProduct = null;

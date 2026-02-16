@@ -22,20 +22,31 @@
             <span class="badge" id="cartCount">0</span>
         </button>
 
-        <button class="chip chip-user" type="button" onclick="App.toggleUserMenu()">
-            Uživatel
-        </button>
+        @using System.Security.Claims
 
-        <div id="userMenu" class="user-menu" hidden>
-            <button type="button" class="user-item">Profil</button>
-            <button type="button" class="user-item">Moje objednávky</button>
-            <button type="button" class="user-item">Nastavení</button>
-            <div class="user-sep"></div>
-            <button type="button" class="user-item danger" onclick="App.logout()">Odhlásit se</button>
+        <div class="top-actions">
+            <button class="icon-chip" type="button" onclick="App.openCart()" aria-label="Košík">
+                <span class="cart-ico">🛒</span>
+                <span class="badge" id="cartCount">0</span>
+            </button>
+
+            <button class="chip chip-user" type="button" onclick="App.toggleUserMenu()">
+                @User.FindFirst("name")?.Value
+            </button>
+
+            <div id="userMenu" class="user-menu" hidden>
+                <button type="button" class="user-item">Profil</button>
+                <button type="button" class="user-item">Moje objednávky</button>
+                <button type="button" class="user-item">Nastavení</button>
+                <div class="user-sep"></div>
+
+                <form method="post" asp-controller="Home" asp-action="Logout">
+                    <button onclick="App.logout()" type="submit" class="user-item danger">Odhlásit se</button>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Hero -->
+
     <header class="hero">
         <div class="hero-inner">
             <div class="hero-brand">

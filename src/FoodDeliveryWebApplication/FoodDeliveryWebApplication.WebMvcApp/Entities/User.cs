@@ -6,10 +6,8 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Entities
     [Table("users")]
     public class User
     {
-        private User()
-        {
-            // Constructor for EF Core
-        }
+        public User() { } // nebo úplně bez konstruktoru
+
 
         public User(string name, string email, string password, string? phone = null)
         {

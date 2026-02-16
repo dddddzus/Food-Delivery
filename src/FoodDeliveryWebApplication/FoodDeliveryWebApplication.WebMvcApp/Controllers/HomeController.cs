@@ -1,9 +1,12 @@
 using FoodDeliveryWebApplication.WebMvcApp.Data;
 using FoodDeliveryWebApplication.WebMvcApp.Entities;
 using FoodDeliveryWebApplication.WebMvcApp.Models;
+using FoodDeliveryWebApplication.WebMvcApp.Models.Account;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -33,6 +36,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
+
             User? user = _dbContext.Users
                 .FirstOrDefault(u => u.Email == email && u.Password == password);
             if(user == null)
@@ -40,6 +44,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
                 return RedirectToAction("Index");
             }
             List<Claim> claims = new List<Claim>();
+
 
             Claim idClaim = new Claim("id", user.Id.ToString());
             Claim emailClaim = new Claim("email", user.Email);
@@ -53,6 +58,7 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
+
             return RedirectToAction("Menu", "FoodExpress");
 
 
@@ -62,18 +68,51 @@ namespace FoodDeliveryWebApplication.WebMvcApp.Controllers
 
         // REGISTER POST (zatím pøipravené)
         [HttpPost]
-        public IActionResult Register(string name, string email, string phone, string password, string confirmPassword)
+        public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            // TODO: Ve škole: validace + uložení do DB
-            if (password != confirmPassword)
+            if (!ModelState.IsValid)
             {
-                TempData["Toast"] = "Hesla se neshodují!";
+                TempData["Toast"] = "Oprav chyby ve formuláøi.";
                 return RedirectToAction("Index");
             }
 
-            TempData["Toast"] = $"Pøijata registrace: {name} ({email})";
+         
+
+
+            bool exists = await _dbContext.Users.AnyAsync(u => u.Email == model.Email);
+            if (exists)
+            {
+                TempData["Toast"] = "Uživatel s tímto emailem už existuje.";
+                return RedirectToAction("Index");
+            }
+
+            var user = new User
+            {
+                Name = model.Name.Trim(),
+                Email = model.Email.Trim(),
+                Password = model.Password 
+                                          
+            };
+
+            _dbContext.Users.Add(user);
+            await _dbContext.SaveChangesAsync();
+
+            TempData["Toast"] = "Registrace probìhla úspìšnì!";
+            return RedirectToAction("Index");
+
+
+        }
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme);
+
             return RedirectToAction("Index");
         }
+
+
+
 
         public IActionResult Privacy()
         {
